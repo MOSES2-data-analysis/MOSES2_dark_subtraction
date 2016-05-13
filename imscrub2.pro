@@ -87,7 +87,7 @@ function imscrub2, image, thresh=thresh, medwidth=medwidth, $
   smoothed = image_marked
   for i = 1L,maxit do begin
     print,'   Smoothing iteration ',i
-    smoothed = ckcd_convol(smoothed, kernel, method='redeem_taint', /edge_truncate)
+    smoothed = ck_convol(smoothed, kernel, method='redeem_taint', /edge_truncate)
     smoothed[ss_good] = image[ss_good] ;no need to smooth good pixels!
     if min(finite(smoothed[ss])) then break
   endfor

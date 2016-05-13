@@ -74,6 +74,8 @@ pro moses2_dark_sub, index_dir=index_dir
   med_zero = median(dark_zero, DIMENSION=3)
   med_plus = median(dark_plus, DIMENSION=3)
   
+  
+  
   ; Print statistics of median dark
   print, 'ZERO-ORDER MEDIAN DARK'
   print, 'Max = ',max(med_zero)
@@ -146,6 +148,8 @@ pro moses2_dark_sub, index_dir=index_dir
   endfor
   
   
+ 
+  
   
   ;Post-filtering to remove dust, particle hits, etc.
   print, systime()+' Post-filtering with IMSCRUB....'
@@ -176,6 +180,16 @@ pro moses2_dark_sub, index_dir=index_dir
       medwidth = medwidth, expand_bad=expand_bad,                            $
       mindiff=mindiff, ndev=ndev, thresh=thresh)
     cube_plus_badpix[*,*,i] = ~finite(image_marked)
+    
+  endfor
+  
+  ; Double image removal
+  for i=0, Ndata-1 do begin
+  
+  	xtv, sqrt(cube_zero[*,*,i]), screenwidth=1800, screenheight=900
+  	cube_zero[*,*,i]=moses2_deconvolve_fft(cube_zero[*,*,i],7,1,0.4) 
+  	xtv, sqrt(cube_zero[*,*,i]), screenwidth=1800, screenheight=900
+  	
   endfor
   
   ; Save images in TIFF format for easy viewing
