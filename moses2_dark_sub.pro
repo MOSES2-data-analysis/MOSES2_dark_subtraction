@@ -11,10 +11,8 @@ pro moses2_dark_sub, index_dir=index_dir
   ; If the optional command line argument is not defined
   ; Set the director to the defaulf flight directory
   if ~keyword_set(index_dir) then begin
-    index_dir = '/disk/data/kankel/MOSES2flight/'
+    index_dir = 'IDLWorkspace/MOSES2_LevelZero_Dataset'
   endif
-  
-  JOURNAL, 'dark_sub ' + systime()  ; Store output in log file
   
   print, systime() + ' MOSES2 Dark Subtraction Starting...'
   
@@ -119,8 +117,8 @@ pro moses2_dark_sub, index_dir=index_dir
     
     ;Dark subtract and map to all positive values
     zero_value = 0.1 ;the value zero will map to
-    zero  = positivity(zero  - med_zero,  epsilon=4*zero_value^2)
-    plus  = positivity(plus  - med_plus,  epsilon=4*zero_value^2)
+    zero  = positivity(zero - med_zero, epsilon = 4*zero_value^2)
+    plus  = positivity(plus - med_plus, epsilon = 4*zero_value^2)
     
     ;Mark saturated pixels as missing data
     if (sat_zero[0]  ne -1) then zero[sat_zero]   = missing_data
@@ -134,11 +132,11 @@ pro moses2_dark_sub, index_dir=index_dir
   
   ;Flat fields
   print, systime()+' Applying flat fields to all spectral orders....'
-  restore, "/nfs/home/roysmart/IDLWorkspace71/MOSES2_dark_subtraction/flats/det2ff_042705-2nd.sav"
+  restore, "IDLWorkspace/MOSES2_dark_subtraction/flats/det2ff_042705-2nd.sav"
   flat_zero = rotate(q/max(q), 7)
   ;normalize to unit maximum and orient to the Sun.
   
-  restore, "/nfs/home/roysmart/IDLWorkspace71/MOSES2_dark_subtraction/flats/det3ff_111606-2nd.sav
+  restore, "IDLWorkspace/MOSES2_dark_subtraction/flats/det3ff_111606-2nd.sav"
   flat_plus = rotate(q/max(q), 7)
   ;normalize to unit maximum and orient to the Sun.
   
@@ -159,7 +157,7 @@ pro moses2_dark_sub, index_dir=index_dir
   cube_plus_badpix  = bytarr(Nx, Ny, Ndata)
   
   ;Parameters for IMSCRUB2:
-  mindiff    = 1.0
+  mindiff    = 10.0
   ndev       = 3.0
   thresh     = 0.25
   medwidth   = 5
@@ -183,35 +181,51 @@ pro moses2_dark_sub, index_dir=index_dir
     
   endfor
   
-  ; Double image removal
-  for i=0, Ndata-1 do begin
-  
-  	xtv, sqrt(cube_zero[*,*,i]), screenwidth=1800, screenheight=900
-  	cube_zero[*,*,i]=moses2_deconvolve_fft(cube_zero[*,*,i],7,1,0.4) 
-  	xtv, sqrt(cube_zero[*,*,i]), screenwidth=1800, screenheight=900
-  	
-  endfor
-  
   ; Save images in TIFF format for easy viewing
   print, 'Saving images to TIFF format...'
-  output_dir = '/nfs/home/roysmart/MOSES2_tiff_images_level1'
+  output_dir = 'IDLWorkspace/MOSES2_LevelOne_Dataset/MOSES2_tiff_images_level1'
   for i = 0, Ndata-1 do begin
-  
+
     j = data_list[i] ; find index of next data image
-    
+
     ; Scale into 8 bit channel
-    zero_tiff = bytscl(cube_zero[*,*,i])
-    plus_tiff = bytscl(cube_plus[*,*,i])
-    
+    zero_tiff = bytscl(sqrt(cube_zero[*,*,i]))
+    plus_tiff = bytscl(sqrt(cube_plus[*,*,i]))
+
     write_tiff, output_dir+'/zero/'+strmid(index.filename[j],6,18)+'.tif', zero_tiff
     write_tiff, output_dir+'/plus/'+strmid(index.filename[j],6,18)+'.tif', plus_tiff
-    
+
   endfor
+
+  print, 'images written successfully'
+  
+;  ; Double image removal
+;  for i=0, Ndata-1 do begin
+;  
+;  	;xtv, sqrt(cube_zero[*,*,i]), screenwidth=1800, screenheight=900
+;  	cube_zero[*,*,i]=moses2_deconvolve_fft(cube_zero[*,*,i],7,1,0.4) 
+;  	;xtv, sqrt(cube_zero[*,*,i]), screenwidth=1800, screenheight=900
+;  	
+;  endfor
+;  
+;  ; Save images in TIFF format for easy viewing
+;  print, 'Saving images to TIFF format...'
+;  output_dir = 'IDLWorkspace/MOSES2_LevelOne_Dataset/MOSES2_tiff_images_level1'
+;  for i = 0, Ndata-1 do begin
+;  
+;    j = data_list[i] ; find index of next data image
+;    
+;    ; Scale into 8 bit channel
+;    zero_tiff = bytscl(cube_zero[*,*,i])
+;    
+;    write_tiff, output_dir+'/zero/'+strmid(index.filename[j],6,18)+'.corrected.tif', zero_tiff
+;    
+;  endfor
   
   print, 'images written successfully'
   
   print, systime()+' MOSES_PREP saving to disk.'
-  save, filename='mosesLevelOne.sav'
+  save, filename='IDLWorkspace/MOSES2_LevelOne_Dataset/mosesLevelOne.sav'
   print, systime()+' MOSES_PREP completed.'
   
   

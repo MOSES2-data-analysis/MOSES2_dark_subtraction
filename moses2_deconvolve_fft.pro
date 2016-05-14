@@ -44,7 +44,7 @@ function moses2_deconvolve_fft, img, ax, ay, intensity
 		
 		img = real_part(fft(zero_ft, /INVERSE))
 		
-	 	xtv, img, screenwidth=1800, screenheight=900
+	 	;xtv, img, screenwidth=1800, screenheight=900
 	 
 	;endfor
 
