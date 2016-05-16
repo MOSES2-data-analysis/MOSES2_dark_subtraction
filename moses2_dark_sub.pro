@@ -48,7 +48,7 @@ pro moses2_dark_sub, index_dir=index_dir
   
   
   ; PROCESS DARK IMAGES
-  Ndark = 7
+  Ndark = 7 ; Not all of the dark images are good in this dataset
   
   ; Store the average dark image in DN/usec
   ; dark_minus = fltarr(Nx, Ny) eliminated since data is lost here
@@ -81,7 +81,7 @@ pro moses2_dark_sub, index_dir=index_dir
   print, 'Median = ',median(med_zero)
   print, 'Min = ',min(med_zero)
   print
-  print, 'ZERO-ORDER MEDIAN DARK'
+  print, 'POSITIVE-ORDER MEDIAN DARK'
   print, 'Max = ', max(med_plus)
   print, 'Mean = ', mean(med_plus)
   print, 'Median = ', median(med_plus)
@@ -102,6 +102,15 @@ pro moses2_dark_sub, index_dir=index_dir
     
     ; Copy next image into memory
     moses2_read, index.filename[i],minus,zero,plus,noise, directory=index_dir, error=error, byteorder=byteorder
+
+    ; Write images as tiff for testing
+    output_dir = 'IDLWorkspace/MOSES2_LevelOne_Dataset/MOSES2_tiff_images_darksub'
+    ;output_dir = 'IDLWorkspace/temp'
+    zero_tiff = bytscl(sqrt(rotate(zero,5)))
+    plus_tiff = bytscl(sqrt(rotate(plus,5)))
+    write_tiff, output_dir+'/zero/'+strmid(index.filename[i],7,12)+string((index.exptime[i]*1e-6), FORMAT='(f20.2)')+'  darksub.tif', zero_tiff
+    write_tiff, output_dir+'/plus/'+strmid(index.filename[i],7,12)+string((index.exptime[i]*1e-6), FORMAT='(f20.2)')+'  darksub.tif', plus_tiff
+
     
     ; Print image statistics
     print,"Got ",index.filename[i]
@@ -127,6 +136,15 @@ pro moses2_dark_sub, index_dir=index_dir
     ;Store in cube, flipped E-W to view sun correctly.)
     cube_zero[*,*,j]  = rotate(zero, 5)
     cube_plus[*,*,j]  = rotate(plus, 5)
+    
+    ; Write images as tiff for testing
+    output_dir = 'IDLWorkspace/MOSES2_LevelZero_Dataset/MOSES2_tiff_images_raw'
+    ;output_dir = 'IDLWorkspace/temp'
+    zero_tiff = bytscl(sqrt(cube_zero[*,*,j]))
+    plus_tiff = bytscl(sqrt(cube_plus[*,*,j]))
+    write_tiff, output_dir+'/zero/'+strmid(index.filename[i],7,12)+string((index.exptime[i]*1e-6), FORMAT='(f20.2)')+'  raw.tif', zero_tiff
+    write_tiff, output_dir+'/plus/'+strmid(index.filename[i],7,12)+string((index.exptime[i]*1e-6), FORMAT='(f20.2)')+'  raw.tif', plus_tiff
+
     
   endfor
   
@@ -157,8 +175,8 @@ pro moses2_dark_sub, index_dir=index_dir
   cube_plus_badpix  = bytarr(Nx, Ny, Ndata)
   
   ;Parameters for IMSCRUB2:
-  mindiff    = 10.0
-  ndev       = 3.0
+  mindiff    = 1.0
+  ndev       = 5.0
   thresh     = 0.25
   medwidth   = 5
   expand_bad = 1
@@ -166,18 +184,25 @@ pro moses2_dark_sub, index_dir=index_dir
   print,"    medwidth=",medwidth,",  expand_bad=",expand_bad
   
   for i=0, Ndata-1 do begin
-  
-    print,'Exposure ',i,' order m =  0'
-    cube_zero[*,*,i]  = imscrub2(cube_zero[*,*,i], image_marked=image_marked, $
-      medwidth = medwidth, expand_bad=expand_bad,                            $
-      mindiff=mindiff, ndev=ndev, thresh=thresh)
-    cube_zero_badpix[*,*,i] = ~finite(image_marked)
     
-    print,'Exposure ',i,' order m = +1'
-    cube_plus[*,*,i]  = imscrub2(cube_plus[*,*,i], image_marked=image_marked, $
-      medwidth = medwidth, expand_bad=expand_bad,                            $
-      mindiff=mindiff, ndev=ndev, thresh=thresh)
-    cube_plus_badpix[*,*,i] = ~finite(image_marked)
+    ; imscrub does not work for images with low S/
+    j = data_list[i] ; find index of next data imageN
+    if (index.exptime[j] gt 2e6) then begin
+      print, index.exptime[j]
+      
+      print,'Exposure ',i,' order m =  0'
+      cube_zero[*,*,i]  = imscrub2(cube_zero[*,*,i], image_marked=image_marked, $
+        medwidth = medwidth, expand_bad=expand_bad,                            $
+        mindiff=mindiff, ndev=ndev, thresh=thresh)
+      cube_zero_badpix[*,*,i] = ~finite(image_marked)
+      
+      print,'Exposure ',i,' order m = +1'
+      cube_plus[*,*,i]  = imscrub2(cube_plus[*,*,i], image_marked=image_marked, $
+        medwidth = medwidth, expand_bad=expand_bad,                            $
+        mindiff=mindiff, ndev=ndev, thresh=thresh)
+      cube_plus_badpix[*,*,i] = ~finite(image_marked)
+    
+    endif
     
   endfor
   
@@ -186,18 +211,22 @@ pro moses2_dark_sub, index_dir=index_dir
   output_dir = 'IDLWorkspace/MOSES2_LevelOne_Dataset/MOSES2_tiff_images_level1'
   for i = 0, Ndata-1 do begin
 
-    j = data_list[i] ; find index of next data image
+      ;if index.filename[j] > 5e6 then begin
+      j = data_list[i] ; find index of next data image
+    
+      ; Scale into 8 bit channel
+      zero_tiff = bytscl(sqrt(cube_zero[*,*,i]))
+      plus_tiff = bytscl(sqrt(cube_plus[*,*,i]))
+    
+      write_tiff, output_dir+'/zero/'+strmid(index.filename[j],7,12)+string((index.exptime[j]*1e-6), FORMAT='(f20.2)')+'  level1.tif', zero_tiff
+      write_tiff, output_dir+'/plus/'+strmid(index.filename[j],7,12)+string((index.exptime[j]*1e-6), FORMAT='(f20.2)')+'  level1.tif', plus_tiff
 
-    ; Scale into 8 bit channel
-    zero_tiff = bytscl(sqrt(cube_zero[*,*,i]))
-    plus_tiff = bytscl(sqrt(cube_plus[*,*,i]))
-
-    write_tiff, output_dir+'/zero/'+strmid(index.filename[j],6,18)+'.tif', zero_tiff
-    write_tiff, output_dir+'/plus/'+strmid(index.filename[j],6,18)+'.tif', plus_tiff
-
+    ;endif
   endfor
 
   print, 'images written successfully'
+  
+
   
 ;  ; Double image removal
 ;  for i=0, Ndata-1 do begin
@@ -228,5 +257,6 @@ pro moses2_dark_sub, index_dir=index_dir
   save, filename='IDLWorkspace/MOSES2_LevelOne_Dataset/mosesLevelOne.sav'
   print, systime()+' MOSES_PREP completed.'
   
+ 
   
 end
