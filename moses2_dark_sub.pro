@@ -211,7 +211,6 @@ pro moses2_dark_sub, index_dir=index_dir
   output_dir = 'IDLWorkspace/MOSES2_LevelOne_Dataset/MOSES2_tiff_images_level1'
   for i = 0, Ndata-1 do begin
 
-      ;if index.filename[j] > 5e6 then begin
       j = data_list[i] ; find index of next data image
     
       ; Scale into 8 bit channel
@@ -221,7 +220,6 @@ pro moses2_dark_sub, index_dir=index_dir
       write_tiff, output_dir+'/zero/'+strmid(index.filename[j],7,12)+string((index.exptime[j]*1e-6), FORMAT='(f20.2)')+'  level1.tif', zero_tiff
       write_tiff, output_dir+'/plus/'+strmid(index.filename[j],7,12)+string((index.exptime[j]*1e-6), FORMAT='(f20.2)')+'  level1.tif', plus_tiff
 
-    ;endif
   endfor
 
   print, 'images written successfully'
@@ -232,7 +230,7 @@ pro moses2_dark_sub, index_dir=index_dir
 ;  for i=0, Ndata-1 do begin
 ;  
 ;  	;xtv, sqrt(cube_zero[*,*,i]), screenwidth=1800, screenheight=900
-;  	cube_zero[*,*,i]=moses2_deconvolve_fft(cube_zero[*,*,i],7,1,0.4) 
+;  	cube_zero[*,*,i]=moses2_deconvolve_fft(cube_zero[*,*,i],7,1,0.3) 
 ;  	;xtv, sqrt(cube_zero[*,*,i]), screenwidth=1800, screenheight=900
 ;  	
 ;  endfor
@@ -244,17 +242,16 @@ pro moses2_dark_sub, index_dir=index_dir
 ;  
 ;    j = data_list[i] ; find index of next data image
 ;    
-;    ; Scale into 8 bit channel
-;    zero_tiff = bytscl(cube_zero[*,*,i])
-;    
-;    write_tiff, output_dir+'/zero/'+strmid(index.filename[j],6,18)+'.corrected.tif', zero_tiff
-;    
+;    ; Write image to file
+;    zero_tiff = bytscl(sqrt(cube_zero[*,*,i])) 
+;    write_tiff, output_dir+'/zero/'+strmid(index.filename[j],7,12)+string((index.exptime[j]*1e-6), FORMAT='(f20.2)')+'  corrected.tif', zero_tiff
+;      
 ;  endfor
-  
-  print, 'images written successfully'
+;  
+;  print, 'images written successfully'
   
   print, systime()+' MOSES_PREP saving to disk.'
-  save, filename='IDLWorkspace/MOSES2_LevelOne_Dataset/mosesLevelOne.sav'
+  save, filename='IDLWorkspace/MOSES2_LevelOne_Dataset/mosesDarkSub.sav'
   print, systime()+' MOSES_PREP completed.'
   
  
